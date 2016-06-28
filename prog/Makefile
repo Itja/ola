@@ -9,4 +9,4 @@ run: ola.run
 	./ola.run
 
 gen: out.wav
-	cvlc out.wav
+	cvlc --play-and-exit out.wav
