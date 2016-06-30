@@ -5,15 +5,14 @@
 
 #include	<sndfile.hh>
 
-#define		STRETCH			1.006511 //Stretching Factor alpha
-//#define		FRAME_SIZE		1024 //N
-//#define		A_HOP_SIZE		512 //Analysis Hop Size Ha
+#define		STRETCH			1.2 //Stretching Factor alpha
 #define		FRAME_SIZE		1024 //N
 #define		A_HOP_SIZE		512 //Analysis Hop Size Ha
 #define		WINDOW			w_hamming
+#define		IN_FILENAME		"in/dcw_perfect.wav"
+#define		OUT_FILENAME	"out.wav"
 //#define DEBUG
 
-//worst results, best performance with the one-function!
 static float w_one(int n)
 {
 	return 1.0;
@@ -58,7 +57,7 @@ static void act_file(const char *fnameIn, const char* fnameOut)
 		frame_w[r] = (float*) calloc(sizeof(float), framesize);
 	}
 
-	int outsize = framesize * ringsize * 2;
+	int outsize = framesize * ringsize;
 	float* out = (float*) calloc(sizeof(float*), outsize);
 	int c_out = 0; //out cursor
 	int cw_out = 0; //out written cursor
@@ -72,8 +71,7 @@ static void act_file(const char *fnameIn, const char* fnameOut)
 	cw_out = 0;
 	c_out = framesize;
 	printf("c_out set to %d\n", c_out);
-	//fileOut.write(out, framesize - s_hs);
-	//
+
 	printf("Working on the rest of the input..\n");
 
 	for (int x = 1; ; x++) {
@@ -95,9 +93,11 @@ static void act_file(const char *fnameIn, const char* fnameOut)
 		for (int n = 0; n < framesize; n++) {
 			float wn = window(n);
 			float cur_value = (wn * frame_w[i][n]) / (wn*wn);
+#ifdef DEBUG
 			if (n < 1 || n > (framesize - 2)) {
 				printf("[%d]=%f (w=%f)\n", n, cur_value, wn);
 			}
+#endif
 			int oi = (c_out - s_hs + n) % outsize;
 			if (n < s_hs) {
 				out[oi] += cur_value;
@@ -118,7 +118,6 @@ static void act_file(const char *fnameIn, const char* fnameOut)
 #endif
 
 		if ((new_cw_out / outsize) != (cw_out / outsize)) { //ring buffer reading is not trivial..
-			printf("differ: %d != %d\n", new_cw_out / outsize, cw_out / outsize);
 			//out[cw_out % outsize] = -1.0f;
 			fileOut.write((const float*) (&out[cw_out % outsize]), outsize - (cw_out % outsize));
 			cw_out += outsize - (cw_out % outsize); //shift to next full outsize
@@ -157,11 +156,11 @@ static void act_file(const char *fnameIn, const char* fnameOut)
 
 int main(void)
 {	
-	const char * fname = "in/fc.wav";
+	const char * fname = IN_FILENAME;
 
 	puts("\nReading file\n");
 
-	act_file(fname, "out.wav");
+	act_file(fname, OUT_FILENAME);
 
 	puts("Done.\n");
 	return 0;
